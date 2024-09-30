@@ -2,9 +2,12 @@ package com.Ghassen.ShopMB.controller;
 
 
 import com.Ghassen.ShopMB.exceptions.ResourceNotFoundException;
+import com.Ghassen.ShopMB.model.Cart;
+import com.Ghassen.ShopMB.model.User;
 import com.Ghassen.ShopMB.responseSchema.ApiResponse;
 import com.Ghassen.ShopMB.service.cart.ICartItemService;
 import com.Ghassen.ShopMB.service.cart.ICartService;
+import com.Ghassen.ShopMB.service.user.IUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,17 +20,19 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class CartItemController {
     private final ICartItemService cartItemService;
     private final ICartService cartService;
+    private final IUserService userService;
 
 
     @PostMapping("/item/add")
-    public ResponseEntity<ApiResponse> addItemToCart(@RequestParam(required = false) Long cartId,
+    public ResponseEntity<ApiResponse> addItemToCart(
                                                      @RequestParam Long productId,
                                                      @RequestParam Integer quantity) {
         try {
-            if (cartId == null) {
-                cartId= cartService.initializeNewCart();
-            }
-            cartItemService.addItemToCart(cartId, productId, quantity);
+
+            User user = userService.getUserById(4L);
+            Cart cart= cartService.initializeNewCart(user);
+
+            cartItemService.addItemToCart(cart.getId(), productId, quantity);
             return ResponseEntity.ok(new ApiResponse("Add Item Success", null));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));

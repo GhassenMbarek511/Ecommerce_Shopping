@@ -5,6 +5,7 @@ package com.Ghassen.ShopMB.service.product;
 
 import com.Ghassen.ShopMB.dto.ImageDto;
 import com.Ghassen.ShopMB.dto.ProductDto;
+import com.Ghassen.ShopMB.exceptions.AlreadyExistsException;
 import com.Ghassen.ShopMB.exceptions.ResourceNotFoundException;
 import com.Ghassen.ShopMB.model.Category;
 import com.Ghassen.ShopMB.repository.CategoryRepository;
@@ -36,6 +37,10 @@ public class ProductService implements IProductService {
         // If No, the save it as a new category
         // The set as the new product category.
 
+        if (productExists(request.getName(), request.getBrand())){
+            throw new AlreadyExistsException(request.getBrand() +" "+request.getName()+ " already exists, you may update this product instead!");
+        }
+
         Category category = Optional.ofNullable(categoryRepository.findByName(request.getCategory().getName()))
                 .orElseGet(() -> {
                     Category newCategory = new Category(request.getCategory().getName());
@@ -44,6 +49,10 @@ public class ProductService implements IProductService {
         request.setCategory(category);
         return productRepository.save(createProduct(request, category));
     }
+    private boolean productExists(String name , String brand) {
+        return productRepository.existsByNameAndBrand(name, brand);
+    }
+
 
     private Product createProduct(AddProductRequest request, Category category) {
         return new Product(

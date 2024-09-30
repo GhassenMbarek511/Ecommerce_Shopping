@@ -3,14 +3,17 @@ package com.Ghassen.ShopMB.service.cart;
 
 import com.Ghassen.ShopMB.exceptions.ResourceNotFoundException;
 import com.Ghassen.ShopMB.model.Cart;
+import com.Ghassen.ShopMB.model.User;
 import com.Ghassen.ShopMB.repository.CartItemRepository;
 
 import com.Ghassen.ShopMB.repository.CartRepository;
+import com.Ghassen.ShopMB.service.product.IProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
@@ -18,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class CartService implements ICartService{
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
+    private final IProductService productService;
     private final AtomicLong cartIdGenerator = new AtomicLong(0);
 
     @Override
@@ -35,7 +39,7 @@ public class CartService implements ICartService{
     public void clearCart(Long id) {
         Cart cart = getCart(id);
         cartItemRepository.deleteAllByCartId(id);
-        cart.getItems().clear();
+        cart.clearCart();
         cartRepository.deleteById(id);
 
     }
@@ -47,12 +51,13 @@ public class CartService implements ICartService{
     }
 
     @Override
-    public Long initializeNewCart() {
-        Cart newCart = new Cart();
-        Long newCartId = cartIdGenerator.incrementAndGet();
-        newCart.setId(newCartId);
-        return cartRepository.save(newCart).getId();
-
+    public Cart initializeNewCart(User user) {
+        return Optional.ofNullable(getCartByUserId(user.getId()))
+                .orElseGet(() -> {
+                    Cart cart = new Cart();
+                    cart.setUser(user);
+                    return cartRepository.save(cart);
+                });
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.Ghassen.ShopMB.service.cart;
 
 
 import com.Ghassen.ShopMB.model.Cart;
+import com.Ghassen.ShopMB.model.User;
 
 import java.math.BigDecimal;
 
@@ -11,7 +12,7 @@ public interface ICartService {
     void clearCart(Long id);
     BigDecimal getTotalPrice(Long id);
 
-    Long initializeNewCart();
+    Cart initializeNewCart(User user);
 
     Cart getCartByUserId(Long userId);
 }

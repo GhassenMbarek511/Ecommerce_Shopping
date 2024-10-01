@@ -2,6 +2,7 @@ package com.Ghassen.ShopMB.service.cart;
 
 
 
+import com.Ghassen.ShopMB.dto.CartDto;
 import com.Ghassen.ShopMB.model.Cart;
 import com.Ghassen.ShopMB.model.User;
 
@@ -15,4 +16,5 @@ public interface ICartService {
     Cart initializeNewCart(User user);
 
     Cart getCartByUserId(Long userId);
+    CartDto convertToDto(Cart cart);
 }

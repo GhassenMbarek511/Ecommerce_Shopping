@@ -77,7 +77,7 @@ public class OrderService implements IOrderService {
     public OrderDto getOrder(Long orderId) {
         return orderRepository.findById(orderId)
                 .map(this :: convertToDto)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("No orders found"));
     }
 
     @Override

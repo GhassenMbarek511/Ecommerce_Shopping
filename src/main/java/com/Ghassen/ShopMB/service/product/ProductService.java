@@ -7,20 +7,20 @@ import com.Ghassen.ShopMB.dto.ImageDto;
 import com.Ghassen.ShopMB.dto.ProductDto;
 import com.Ghassen.ShopMB.exceptions.AlreadyExistsException;
 import com.Ghassen.ShopMB.exceptions.ResourceNotFoundException;
-import com.Ghassen.ShopMB.model.Category;
-import com.Ghassen.ShopMB.repository.CategoryRepository;
-import com.Ghassen.ShopMB.repository.ImageRepository;
-import com.Ghassen.ShopMB.repository.ProductRepository;
-import com.Ghassen.ShopMB.model.Image;
-import com.Ghassen.ShopMB.model.Product;
+import com.Ghassen.ShopMB.model.*;
+import com.Ghassen.ShopMB.repository.*;
 import com.Ghassen.ShopMB.requestSchema.AddProductRequest;
 import com.Ghassen.ShopMB.requestSchema.ProductUpdateRequest;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +29,9 @@ public class ProductService implements IProductService {
     private final CategoryRepository categoryRepository;
     private final ModelMapper modelMapper;
     private final ImageRepository imageRepository;
+    private final CartItemRepository cartItemRepository;
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
 
     @Override
     public Product addProduct(AddProductRequest request) {
@@ -37,9 +40,9 @@ public class ProductService implements IProductService {
         // If No, the save it as a new category
         // The set as the new product category.
 
-        if (productExists(request.getName(), request.getBrand())){
-            throw new AlreadyExistsException(request.getBrand() +" "+request.getName()+ " already exists, you may update this product instead!");
-        }
+        if (productExists(request.getName(), request.getBrand())) {
+            throw new AlreadyExistsException(request.getBrand() + " "
+                    + request.getName() + " already exists, you may update this product instead!");}
 
         Category category = Optional.ofNullable(categoryRepository.findByName(request.getCategory().getName()))
                 .orElseGet(() -> {
@@ -74,9 +77,27 @@ public class ProductService implements IProductService {
 
     @Override
     public void deleteProductById(Long id) {
+        List<CartItem> cartItems = cartItemRepository.findByProductId(id);
+        List<OrderItem> orderItems = orderItemRepository.findByProductId(id);
         productRepository.findById(id)
-                .ifPresentOrElse(productRepository::delete,
-                        () -> {throw new ResourceNotFoundException("Product not found!");});
+                .ifPresentOrElse(product -> {
+                    // Functional approach for category removal
+                    Optional.ofNullable(product.getCategory())
+                            .ifPresent(category -> category.getProducts().remove(product));
+                    product.setCategory(null);
+                    // Functional approach for updating cart items
+                    cartItems.stream()
+                            .peek(cartItem -> cartItem.setProduct(null))
+                            .peek(CartItem::setTotalPrice)
+                            .forEach(cartItemRepository::save);
+                    // Functional approach for updating order items
+                    orderItems.stream()
+                            .peek(orderItem -> orderItem.setProduct(null))
+                            .forEach(orderItemRepository::save);
+                    productRepository.delete(product);
+                }, () -> {
+                    throw new EntityNotFoundException("Product not found!");
+                });
     }
 
     @Override
@@ -150,6 +171,28 @@ public class ProductService implements IProductService {
         productDto.setImages(imageDtos);
         return productDto;
 
-}}
+}
+
+    @Override
+    public List<Product> findDistinctProductsByName() {
+        List<Product> products = productRepository.findAll();
+        Map<String, Product> distinctProductsMap = products.stream()
+                .collect(Collectors.toMap(
+                        Product::getName,
+                        product -> product,
+                        (existing, replacement) -> existing));
+        return new ArrayList<>(distinctProductsMap.values());
+    }
+    @Override
+    public List<String> getAllDistinctBrands() {
+        return productRepository.findAll().stream()
+                .map(Product::getBrand)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+
+
+}
 
 

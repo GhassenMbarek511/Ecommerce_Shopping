@@ -9,6 +9,7 @@ import com.Ghassen.ShopMB.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
+import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +25,7 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public void onApplicationEvent(ApplicationReadyEvent event) {
+    public void onApplicationEvent(@NonNull ApplicationReadyEvent event) {
         Set<String> defaultRoles =  Set.of("ROLE_ADMIN", "ROLE_USER");
         createDefaultUserIfNotExits();
         createDefaultRoleIfNotExits(defaultRoles);
@@ -33,7 +34,9 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
 
 
     private void createDefaultUserIfNotExits(){
-        Role userRole = roleRepository.findByName("ROLE_USER").get();
+        // Role userRole = roleRepository.findByName("ROLE_USER").get();
+        Role userRole = roleRepository.findByName("ROLE_USER")
+                .orElseThrow(() -> new RuntimeException("Role ROLE_USER not found"));
         for (int i = 1; i<=5; i++){
             String defaultEmail = "user"+i+"@email.com";
             if (userRepository.existsByEmail(defaultEmail)){
@@ -53,7 +56,9 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
 
 
     private void createDefaultAdminIfNotExits(){
-        Role adminRole = roleRepository.findByName("ROLE_ADMIN").get();
+        //Role adminRole = roleRepository.findByName("ROLE_ADMIN").get();
+        Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+                .orElseThrow(() -> new RuntimeException("Role ROLE_ADMIN not found"));
         for (int i = 1; i<=2; i++){
             String defaultEmail = "admin"+i+"@email.com";
             if (userRepository.existsByEmail(defaultEmail)){
